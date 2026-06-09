@@ -79,21 +79,24 @@ Before pushing a branch to GitHub:
 
 ### PR Title
 
-Use a concise English title:
+Use the PR title format:
 
 ```text
-<type>: <english summary>
+comelyMD-#<issue-number>: <english summary>
+```
+
+For PRs without a related issue, use:
+
+```text
+MINOR: <english summary>
 ```
 
 Examples:
 
 ```text
-docs: add Claude Code project guidance
-fix: preserve math blocks during Markdown sanitization
-feat: add password-protected share expiration
+comelyMD-#12: preserve math blocks during Markdown sanitization
+MINOR: add Claude Code project guidance
 ```
-
-If there is a related GitHub issue, reference it in the PR body with `Closes #123` or `Refs #123`.
 
 ### PR Body
 

@@ -112,13 +112,17 @@ For user-facing, security-sensitive, storage, API, or deployment changes, includ
 
 ## Pull Request Template
 
-Use a concise English PR title:
+Use the PR title format:
 
 ```text
-<type>: <english summary>
+comelyMD-#<issue-number>: <english summary>
 ```
 
-If there is a related GitHub issue, reference it in the PR body with `Closes #123` or `Refs #123`.
+For PRs without a related issue, use:
+
+```text
+MINOR: <english summary>
+```
 
 PR body:
 
