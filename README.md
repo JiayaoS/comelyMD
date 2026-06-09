@@ -49,7 +49,7 @@ docker-compose up -d
 
 ### Vercel 一键部署（演示/预览）
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Loxonl/comelyMD)
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/import/project?template=https://github.com/Loxonl/comelyMD)
 
 本仓库已包含 `vercel.json`，Vercel 会使用 Go 运行时的 Go Framework Preset 从根目录 `main.go` 构建并运行服务。默认配置：
 
@@ -58,6 +58,17 @@ DB_PATH=/tmp/comelymd/comelymd.db
 ```
 
 > ⚠️ Vercel Functions 只有只读部署文件系统和 `/tmp` 临时写入空间。当前 SQLite 文件在 Vercel 上不具备可靠持久化，数据可能在冷启动、重新部署、实例切换或平台清理后丢失。请保持 Vercel 的 `DB_PATH` 指向 `/tmp`，不要改成部署目录内路径。因此 Vercel 部署适合演示、预览和临时分享；需要长期保存分享内容时，请使用 Docker Compose / VPS 挂载卷部署，或后续接入外部持久化数据库。
+
+<details>
+<summary><b>Vercel 部署步骤</b></summary>
+
+1. 点击上方 `Deploy to Vercel` 按钮。
+2. 使用 GitHub 登录 Vercel。
+3. 按提示导入或 fork 本仓库。
+4. 保持默认项目配置；仓库内的 `vercel.json` 已声明 Go 项目配置和 `DB_PATH`。
+5. 点击 Deploy，部署完成后访问 Vercel 分配的域名。
+
+</details>
 
 ### 本地开发
 
