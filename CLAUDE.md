@@ -21,8 +21,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Runtime Configuration
 
 - `PORT`: HTTP port, default `18080`.
-- `DB_PATH`: SQLite database path, default `./data/app.db`; `main.go` creates `./data` when using the default path.
+- `DB_PATH`: SQLite database path, default `./data/app.db`; `main.go` creates the parent directory for file-backed SQLite paths.
 - Docker Compose mounts `./data` to persist SQLite data outside the container.
+- Vercel deploys use `DB_PATH=/tmp/comelymd/comelymd.db`; this is ephemeral scratch storage, not durable persistence.
 
 ## Architecture
 

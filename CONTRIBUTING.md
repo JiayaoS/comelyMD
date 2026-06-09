@@ -49,11 +49,13 @@ Format edited Go files with:
 gofmt -w path/to/file.go
 ```
 
-For Docker or deployment changes, also validate:
+For Docker or deployment changes, also validate the affected target:
 
 ```bash
 docker-compose -f docker-compose.dev.yml up -d --build
 ```
+
+For Vercel configuration changes, verify `vercel.json` still points SQLite at `/tmp` and document any persistence limitations in the PR.
 
 ## Areas To Test Manually
 

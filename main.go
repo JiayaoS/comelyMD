@@ -2,21 +2,50 @@ package main
 
 import (
 	"log"
+	"net/url"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"mdshare/handler"
 	"mdshare/storage"
 )
+
+func sqliteDatabasePath(dataSourceName string) string {
+	if dataSourceName == ":memory:" {
+		return ""
+	}
+
+	if !strings.HasPrefix(dataSourceName, "file:") {
+		return dataSourceName
+	}
+
+	parsed, err := url.Parse(dataSourceName)
+	if err != nil {
+		return ""
+	}
+
+	databasePath := parsed.Path
+	if parsed.Opaque != "" {
+		databasePath = parsed.Opaque
+	}
+	if strings.HasPrefix(databasePath, ":memory:") {
+		return ""
+	}
+	return databasePath
+}
 
 func main() {
 	// 加载持久化保护，以环境变量声明位置优先加载否则向容下写入映射
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = "./data/app.db"
-		
-		if _, err := os.Stat("./data"); os.IsNotExist(err) {
-			err = os.MkdirAll("./data", os.ModePerm)
-			if err != nil {
+	}
+
+	databasePath := sqliteDatabasePath(dbPath)
+	if databasePath != "" {
+		if dbDir := filepath.Dir(databasePath); dbDir != "." {
+			if err := os.MkdirAll(dbDir, 0o700); err != nil {
 				log.Fatalf("无法预先建设持久化所需数据源数据安全保存文件夹: %v", err)
 			}
 		}

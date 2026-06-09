@@ -34,7 +34,7 @@
 
 ## 🚀 部署
 
-### Docker Compose（推荐）
+### Docker Compose（推荐，持久化生产部署）
 
 ```bash
 git clone https://github.com/Loxonl/comelyMD.git
@@ -46,6 +46,18 @@ docker-compose up -d
 ```
 
 > 💡 **更新版本**：`docker-compose pull && docker-compose up -d`
+
+### Vercel 一键部署（演示/预览）
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Loxonl/comelyMD)
+
+本仓库已包含 `vercel.json`，Vercel 会使用 Go 运行时的 Go Framework Preset 从根目录 `main.go` 构建并运行服务。默认配置：
+
+```text
+DB_PATH=/tmp/comelymd/comelymd.db
+```
+
+> ⚠️ Vercel Functions 只有只读部署文件系统和 `/tmp` 临时写入空间。当前 SQLite 文件在 Vercel 上不具备可靠持久化，数据可能在冷启动、重新部署、实例切换或平台清理后丢失。请保持 Vercel 的 `DB_PATH` 指向 `/tmp`，不要改成部署目录内路径。因此 Vercel 部署适合演示、预览和临时分享；需要长期保存分享内容时，请使用 Docker Compose / VPS 挂载卷部署，或后续接入外部持久化数据库。
 
 ### 本地开发
 
@@ -90,7 +102,7 @@ Content-Type: multipart/form-data
 | 代码高亮 | Highlight.js                        |
 | 字体     | Inter + JetBrains Mono              |
 | 图标     | Font Awesome 6                      |
-| 部署     | Docker · GitHub Actions · GHCR    |
+| 部署     | Docker · Vercel · GitHub Actions · GHCR |
 
 ## 📋 Roadmap
 
