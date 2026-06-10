@@ -78,6 +78,7 @@ func CreatePageHandler(w http.ResponseWriter, r *http.Request) {
 
 	isBurn := r.FormValue("is_burn") == "true"
 	withPwd := r.FormValue("with_password") == "true"
+	effectiveWithPwd := withPwd || isBurn
 	expireStr := r.FormValue("expire_time")
 
 	var expireDuration time.Duration
@@ -102,7 +103,7 @@ func CreatePageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, pwd, err := storage.SavePage(mdContent, safeHTML, isBurn, expireDuration, withPwd)
+	id, pwd, err := storage.SavePage(mdContent, safeHTML, isBurn, expireDuration, effectiveWithPwd)
 	if err != nil {
 		http.Error(w, "数据存储失败", http.StatusInternalServerError)
 		return
