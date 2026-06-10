@@ -21,15 +21,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Runtime Configuration
 
 - `PORT`: HTTP port, default `18080`.
-- `DB_PATH`: SQLite database path, default `./data/app.db`; `main.go` creates the parent directory for file-backed SQLite paths.
-- Docker Compose mounts `./data` to persist SQLite data outside the container.
-- Vercel deploys use `DB_PATH=/tmp/comelymd/comelymd.db`; this is ephemeral scratch storage, not durable persistence.
+- `DB_DRIVER`: database backend selector, default `sqlite`. Supported values: `sqlite`, `libsql`.
+- `DB_PATH`: SQLite database path or SQLite DSN, default `./data/app.db`; `main.go` creates the parent directory for file-backed SQLite paths.
+- `DB_URL`: libSQL/Turso database URL, required when `DB_DRIVER=libsql`.
+- `DB_AUTH_TOKEN`: libSQL/Turso auth token, optional unless the remote database requires it.
+- Docker Compose mounts `./data` to persist local SQLite data outside the container.
+- Vercel defaults to `DB_DRIVER=sqlite` with `DB_PATH=/tmp/comelymd/comelymd.db`; this is ephemeral scratch storage, not durable persistence.
 
 ## Architecture
 
-ComelyMD is a small Go 1.21 Markdown sharing service built on `net/http` and SQLite.
+ComelyMD is a small Go 1.21 Markdown sharing service built on `net/http` with selectable SQLite or libSQL persistence.
 
-- `main.go` wires runtime configuration, initializes SQLite through `storage.InitDB`, then starts the HTTP server through `handler.Run`.
+- `main.go` wires runtime configuration, resolves the selected database backend, initializes persistence through `storage.InitDB`, then starts the HTTP server through `handler.Run`.
 - `handler/server.go` owns route registration and server timeouts. Routes are intentionally minimal: `/` for the editor page, `/api/pages` for page creation, `/p/` for shared-page viewing, and `/static/` for assets.
 - `handler/api.go` contains request handling for the product flow:
   - Parses form or multipart submissions with a 5 MB body limit.
@@ -37,7 +40,7 @@ ComelyMD is a small Go 1.21 Markdown sharing service built on `net/http` and SQL
   - Supports burn-after-read, optional generated passwords, and fixed expiration windows.
   - Renders `templates/*.html` through the package-level parsed template set.
 - `render/markdown.go` is the Markdown security boundary. It uses Goldmark with GFM and unsafe HTML enabled, then sanitizes with Bluemonday. Math spans/blocks are temporarily replaced before Markdown conversion and restored after sanitization as escaped text so KaTeX-style syntax survives without becoming executable HTML.
-- `storage/database.go` is the persistence layer. It keeps a package-level `*sql.DB`, creates or migrates the `pages` table on startup, periodically deletes expired rows, and enforces expiration again during reads. `storage/idgen.go` generates cryptographically random Base62 IDs and passwords.
+- `storage/database.go` is the persistence layer. It keeps a package-level `*sql.DB`, opens either local SQLite or libSQL based on runtime configuration, creates or migrates the `pages` table on startup, periodically deletes expired rows, and enforces expiration again during reads. `storage/idgen.go` generates cryptographically random Base62 IDs and passwords.
 - Frontend assets are server-rendered templates plus static files. Client-side Markdown enhancements, theme behavior, code highlighting, KaTeX/Mermaid display, and page actions live under `templates/` and `static/` rather than a JS build pipeline.
 - `userscript/` is a separate browser userscript integration that posts Markdown into `/api/pages`; keep API compatibility in mind when changing creation semantics or CORS behavior.
 

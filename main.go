@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"io/fs"
 	"log"
 	"net/url"
@@ -15,6 +16,13 @@ import (
 
 //go:embed templates/*.html static/*
 var embeddedFiles embed.FS
+
+type databaseConfig struct {
+	driver         string
+	dataSourceName string
+	localPath      string
+	logTarget      string
+}
 
 func sqliteDatabasePath(dataSourceName string) string {
 	if dataSourceName == ":memory:" {
@@ -40,6 +48,50 @@ func sqliteDatabasePath(dataSourceName string) string {
 	return databasePath
 }
 
+func resolveDatabaseConfig(getenv func(string) string) (databaseConfig, error) {
+	driver := strings.ToLower(strings.TrimSpace(getenv("DB_DRIVER")))
+	if driver == "" {
+		driver = "sqlite"
+	}
+
+	switch driver {
+	case "sqlite":
+		dataSourceName := strings.TrimSpace(getenv("DB_PATH"))
+		if dataSourceName == "" {
+			dataSourceName = "./data/app.db"
+		}
+		return databaseConfig{
+			driver:         driver,
+			dataSourceName: dataSourceName,
+			localPath:      sqliteDatabasePath(dataSourceName),
+			logTarget:      dataSourceName,
+		}, nil
+	case "libsql":
+		databaseURL := strings.TrimSpace(getenv("DB_URL"))
+		if databaseURL == "" {
+			return databaseConfig{}, fmt.Errorf("DB_URL is required when DB_DRIVER=libsql")
+		}
+
+		dataSourceName := databaseURL
+		authToken := strings.TrimSpace(getenv("DB_AUTH_TOKEN"))
+		if authToken != "" {
+			separator := "?"
+			if strings.Contains(databaseURL, "?") {
+				separator = "&"
+			}
+			dataSourceName = databaseURL + separator + "authToken=" + url.QueryEscape(authToken)
+		}
+
+		return databaseConfig{
+			driver:         driver,
+			dataSourceName: dataSourceName,
+			logTarget:      databaseURL,
+		}, nil
+	default:
+		return databaseConfig{}, fmt.Errorf("unsupported DB_DRIVER %q", driver)
+	}
+}
+
 func main() {
 	staticFiles, err := fs.Sub(embeddedFiles, "static")
 	if err != nil {
@@ -48,23 +100,21 @@ func main() {
 	handler.SetTemplates(embeddedFiles)
 	handler.SetStatic(staticFiles)
 
-	// 加载持久化保护，以环境变量声明位置优先加载否则向容下写入映射
-	dbPath := os.Getenv("DB_PATH")
-	if dbPath == "" {
-		dbPath = "./data/app.db"
+	databaseConfig, err := resolveDatabaseConfig(os.Getenv)
+	if err != nil {
+		log.Fatalf("数据库配置无效: %v", err)
 	}
 
-	databasePath := sqliteDatabasePath(dbPath)
-	if databasePath != "" {
-		if dbDir := filepath.Dir(databasePath); dbDir != "." {
+	if databaseConfig.localPath != "" {
+		if dbDir := filepath.Dir(databaseConfig.localPath); dbDir != "." {
 			if err := os.MkdirAll(dbDir, 0o700); err != nil {
 				log.Fatalf("无法预先建设持久化所需数据源数据安全保存文件夹: %v", err)
 			}
 		}
 	}
 
-	storage.InitDB(dbPath)
-	log.Printf("成功接入数据库进行基础载入，相关目标文件定位： %s", dbPath)
+	storage.InitDB(databaseConfig.driver, databaseConfig.dataSourceName)
+	log.Printf("成功接入数据库进行基础载入，驱动=%s，相关目标定位：%s", databaseConfig.driver, databaseConfig.logTarget)
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -1,6 +1,6 @@
 # Contributing to ComelyMD
 
-Thanks for contributing to ComelyMD. This project is a small Go Markdown sharing service with SQLite persistence, server-rendered templates, static frontend assets, and a browser userscript integration.
+Thanks for contributing to ComelyMD. This project is a small Go Markdown sharing service with selectable local SQLite or remote libSQL persistence, server-rendered templates, static frontend assets, and a browser userscript integration.
 
 ## Development Setup
 
@@ -16,6 +16,15 @@ go run .
 ```
 
 By default the app listens on `http://localhost:18080` and stores SQLite data at `./data/app.db`.
+
+For a remote libSQL/Turso database, set:
+
+```bash
+DB_DRIVER=libsql
+DB_URL=libsql://<your-database>.turso.io
+DB_AUTH_TOKEN=<your-token>
+go run .
+```
 
 Run with Docker for development:
 
@@ -55,7 +64,7 @@ For Docker or deployment changes, also validate the affected target:
 docker-compose -f docker-compose.dev.yml up -d --build
 ```
 
-For Vercel configuration changes, verify `vercel.json` still points SQLite at `/tmp` and document any persistence limitations in the PR.
+For Vercel configuration changes, verify `vercel.json` still defaults preview deployments to SQLite on `/tmp`, and document whether the change affects the recommended libSQL/Turso production setup.
 
 ## Areas To Test Manually
 
