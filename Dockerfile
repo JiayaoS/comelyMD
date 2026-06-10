@@ -24,8 +24,6 @@ RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
 # 只将二进制可调用载体进行迁移，达到最简化防攻击微型系统
 COPY --from=builder /app/mdshare .
-COPY templates ./templates
-COPY static ./static
 
 # 将在 yaml 里被主导使用的访问接通孔径声明出来
 EXPOSE 18080

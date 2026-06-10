@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"path"
@@ -17,12 +18,12 @@ import (
 
 var tmpl *template.Template
 
-func init() {
-	var err error
-	tmpl, err = template.ParseGlob("templates/*.html")
+func SetTemplates(templateFS fs.FS) {
+	parsedTemplate, err := template.ParseFS(templateFS, "templates/*.html")
 	if err != nil {
 		log.Fatalf("绝命灾难：核心全局视觉底层在主源启动阶段严重垮塌失联，强制剥离关闭以防静默吞除输出！断点诱因: %v", err)
 	}
+	tmpl = parsedTemplate
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +55,7 @@ func CreatePageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, 5<<20) 
+	r.Body = http.MaxBytesReader(w, r.Body, 5<<20)
 	// 兼容 multipart/form-data 和 application/x-www-form-urlencoded
 	contentType := r.Header.Get("Content-Type")
 	if strings.Contains(contentType, "multipart/form-data") {
@@ -68,7 +69,7 @@ func CreatePageHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	mdContent := r.FormValue("markdown")
 	if strings.TrimSpace(mdContent) == "" {
 		http.Error(w, "分享内容不能为空", http.StatusBadRequest)
@@ -81,12 +82,18 @@ func CreatePageHandler(w http.ResponseWriter, r *http.Request) {
 
 	var expireDuration time.Duration
 	switch expireStr {
-	case "5m": expireDuration = 5 * time.Minute
-	case "1h": expireDuration = time.Hour
-	case "6h": expireDuration = 6 * time.Hour
-	case "24h": expireDuration = 24 * time.Hour
-	case "7d": expireDuration = 7 * 24 * time.Hour
-	case "30d": expireDuration = 30 * 24 * time.Hour
+	case "5m":
+		expireDuration = 5 * time.Minute
+	case "1h":
+		expireDuration = time.Hour
+	case "6h":
+		expireDuration = 6 * time.Hour
+	case "24h":
+		expireDuration = 24 * time.Hour
+	case "7d":
+		expireDuration = 7 * 24 * time.Hour
+	case "30d":
+		expireDuration = 30 * 24 * time.Hour
 	}
 
 	safeHTML, err := render.MarkdownToHTML([]byte(mdContent))
@@ -106,7 +113,7 @@ func CreatePageHandler(w http.ResponseWriter, r *http.Request) {
 	if r.TLS != nil {
 		schema = "https://"
 	}
-	
+
 	host := r.Host
 	if fh := r.Header.Get("X-Forwarded-Host"); fh != "" {
 		host = fh
@@ -119,7 +126,7 @@ func CreatePageHandler(w http.ResponseWriter, r *http.Request) {
 	if pwd != "" {
 		responseCtx["pwd"] = pwd
 	}
-	
+
 	json.NewEncoder(w).Encode(responseCtx)
 }
 
@@ -137,7 +144,9 @@ func extractSEO(markdown string) (title, excerpt string) {
 			break
 		}
 	}
-	if title == "" { title = "ComelyMD Snippet" }
+	if title == "" {
+		title = "ComelyMD Snippet"
+	}
 	// 粗略清理占位标点
 	excerpt = strings.ReplaceAll(excerpt, "*", "")
 	excerpt = strings.ReplaceAll(excerpt, "_", "")
@@ -146,7 +155,9 @@ func extractSEO(markdown string) (title, excerpt string) {
 		runes := []rune(excerpt)
 		excerpt = string(runes[:85]) + "..."
 	}
-	if excerpt == "" { excerpt = "极简、安全、美观的 Markdown 阅后即焚分享工具" }
+	if excerpt == "" {
+		excerpt = "极简、安全、美观的 Markdown 阅后即焚分享工具"
+	}
 	return title, excerpt
 }
 
@@ -155,7 +166,7 @@ func ViewPageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "不允许的操作方式", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	id := path.Base(r.URL.Path)
 	if id == "" || id == "p" {
 		http.NotFound(w, r)
@@ -170,7 +181,7 @@ func ViewPageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	
+
 	if pageData.Password != "" {
 		if r.Method == http.MethodGet {
 			if tmpl != nil {
