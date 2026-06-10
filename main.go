@@ -1,6 +1,8 @@
 package main
 
 import (
+	"embed"
+	"io/fs"
 	"log"
 	"net/url"
 	"os"
@@ -10,6 +12,9 @@ import (
 	"mdshare/handler"
 	"mdshare/storage"
 )
+
+//go:embed templates/*.html static/*
+var embeddedFiles embed.FS
 
 func sqliteDatabasePath(dataSourceName string) string {
 	if dataSourceName == ":memory:" {
@@ -36,6 +41,13 @@ func sqliteDatabasePath(dataSourceName string) string {
 }
 
 func main() {
+	staticFiles, err := fs.Sub(embeddedFiles, "static")
+	if err != nil {
+		log.Fatalf("无法装载内嵌静态资源: %v", err)
+	}
+	handler.SetTemplates(embeddedFiles)
+	handler.SetStatic(staticFiles)
+
 	// 加载持久化保护，以环境变量声明位置优先加载否则向容下写入映射
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
