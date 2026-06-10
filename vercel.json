@@ -1,12 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "go",
-  "build": {
-    "env": {
-      "GO_BUILD_FLAGS": "-ldflags='-w -s'"
-    }
-  },
-  "env": {
-    "DB_PATH": "/tmp/comelymd/comelymd.db"
-  }
 }
