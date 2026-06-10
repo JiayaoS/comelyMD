@@ -4,7 +4,7 @@
 ![Go](https://img.shields.io/badge/Go-1.21-00ADD8.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-极简、安全、美观的 Markdown 内容分享平台。基于 Go + SQLite，专为低配服务器设计。
+极简、安全、美观的 Markdown 内容分享平台。基于 Go，支持本地 SQLite 与远程 libSQL/Turso，专为低配服务器和轻量部署场景设计。
 
 ---
 
@@ -54,10 +54,21 @@ docker-compose up -d
 本仓库已包含 `vercel.json`，Vercel 会使用 Go 运行时的 Go Framework Preset 从根目录 `main.go` 构建并运行服务。默认配置：
 
 ```text
+DB_DRIVER=sqlite
 DB_PATH=/tmp/comelymd/comelymd.db
 ```
 
-> ⚠️ Vercel Functions 只有只读部署文件系统和 `/tmp` 临时写入空间。当前 SQLite 文件在 Vercel 上不具备可靠持久化，数据可能在冷启动、重新部署、实例切换或平台清理后丢失。请保持 Vercel 的 `DB_PATH` 指向 `/tmp`，不要改成部署目录内路径。因此 Vercel 部署适合演示、预览和临时分享；需要长期保存分享内容时，请使用 Docker Compose / VPS 挂载卷部署，或后续接入外部持久化数据库。
+> ⚠️ Vercel Functions 只有只读部署文件系统和 `/tmp` 临时写入空间。当前 SQLite 文件在 Vercel 上不具备可靠持久化，数据可能在冷启动、重新部署、实例切换或平台清理后丢失。默认配置适合演示、预览和临时分享。
+>
+> 如果有进一步的持久化需求，请在 Vercel 项目环境变量中改用 libSQL/Turso：
+>
+> ```text
+> DB_DRIVER=libsql
+> DB_URL=libsql://<your-database>.turso.io
+> DB_AUTH_TOKEN=<your-token>
+> ```
+>
+> 不要把 `DB_AUTH_TOKEN` 写进仓库或 `vercel.json`。本地 Docker / VPS 继续推荐 SQLite 文件挂载卷部署。
 
 <details>
 <summary><b>Vercel 部署步骤</b></summary>
@@ -73,6 +84,18 @@ DB_PATH=/tmp/comelymd/comelymd.db
 ### 本地开发
 
 ```bash
+# 默认使用本地 SQLite
+DB_DRIVER=sqlite go run .
+
+# 或者显式指定本地文件
+DB_DRIVER=sqlite DB_PATH=./data/app.db go run .
+
+# 使用 Turso/libSQL
+DB_DRIVER=libsql \
+DB_URL=libsql://<your-database>.turso.io \
+DB_AUTH_TOKEN=<your-token> \
+go run .
+
 # 本地构建并启动（含热更新支持）
 docker-compose -f docker-compose.dev.yml up -d --build
 
@@ -105,15 +128,15 @@ Content-Type: multipart/form-data
 
 ## 🛠️ 技术栈
 
-| 组件     | 技术                                |
-| -------- | ----------------------------------- |
-| 后端     | Go 1.21 · net/http                 |
-| 数据库   | SQLite（modernc.org/sqlite，纯 Go） |
-| Markdown | Goldmark + Bluemonday               |
-| 代码高亮 | Highlight.js                        |
-| 字体     | Inter + JetBrains Mono              |
-| 图标     | Font Awesome 6                      |
-| 部署     | Docker · Vercel · GitHub Actions · GHCR |
+| 组件     | 技术                                             |
+| -------- | ------------------------------------------------ |
+| 后端     | Go 1.21 · net/http                              |
+| 数据库   | SQLite（modernc.org/sqlite，纯 Go）· libSQL/Turso |
+| Markdown | Goldmark + Bluemonday                            |
+| 代码高亮 | Highlight.js                                     |
+| 字体     | Inter + JetBrains Mono                           |
+| 图标     | Font Awesome 6                                   |
+| 部署     | Docker · Vercel · GitHub Actions · GHCR          |
 
 ## 📋 Roadmap
 
@@ -146,6 +169,7 @@ Content-Type: multipart/form-data
 - [Goldmark](https://github.com/yuin/goldmark) (MIT): 极速且高度可扩展的 Markdown 解析器，用作本项目的核心渲染引擎。
 - [Bluemonday](https://github.com/microcosm-cc/bluemonday) (BSD-3-Clause): 强大的 HTML 净化器，用于彻底防御 XSS 攻击。
 - [modernc.org/sqlite](https://modernc.org/sqlite) (Zlib): CGO-Free 的 SQLite 数据库引擎。
+- [libsql-client-go](https://github.com/tursodatabase/libsql-client-go) (MIT): 用于接入 libSQL / Turso 远程持久化数据库。
 - [Highlight.js](https://highlightjs.org/) (BSD-3-Clause): 极简优美的语法高亮显示工具。
 - [KaTeX](https://katex.org/) (MIT): 极速的数学公式网页端排版支持库。
 - [Mermaid](https://mermaid.js.org/) (MIT): 使用类 Markdown 文本生成图表的出众库。

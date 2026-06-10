@@ -1,11 +1,13 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log"
 	"time"
 
+	_ "github.com/tursodatabase/libsql-client-go/libsql"
 	_ "modernc.org/sqlite"
 )
 
@@ -22,11 +24,19 @@ type Page struct {
 var DB *sql.DB
 
 // InitDB 对接挂载卷数据库缓存服务，建立并升级对应的核心高阶隐私数据列方案以支持动态表查询。
-func InitDB(dataSourceName string) {
+func InitDB(driver, dataSourceName string) {
 	var err error
-	DB, err = sql.Open("sqlite", dataSourceName)
+	DB, err = sql.Open(driver, dataSourceName)
 	if err != nil {
 		log.Fatalf("无法连接数据库: %v", err)
+	}
+
+	if driver == "libsql" {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := DB.PingContext(ctx); err != nil {
+			log.Fatalf("数据库连通性校验失败: %v", err)
+		}
 	}
 
 	createTableQuery := `
@@ -59,7 +69,7 @@ func InitDB(dataSourceName string) {
 // SavePage 对参数进行兼容接收保护落成存储数据库并回吐双密匙组合。
 func SavePage(markdown, html string, isBurn bool, expireDuration time.Duration, withPassword bool) (string, string, error) {
 	var id string
-	
+
 	// 设置自动避免碰撞的最多次尝试安全冗余设定
 	for i := 0; i < 5; i++ {
 		newID, err := GenerateID(8)
@@ -76,7 +86,7 @@ func SavePage(markdown, html string, isBurn bool, expireDuration time.Duration, 
 			break
 		}
 	}
-	
+
 	if id == "" {
 		return "", "", errors.New("无法成功分配空闲短链接访问 ID 极低可能性的报错暴露")
 	}
@@ -93,9 +103,9 @@ func SavePage(markdown, html string, isBurn bool, expireDuration time.Duration, 
 		nullExpires.Time = time.Now().UTC().Add(expireDuration)
 	}
 
-	_, err := DB.Exec(`INSERT INTO pages (id, markdown, html, is_burn, expires_at, password) VALUES (?, ?, ?, ?, ?, ?)`, 
+	_, err := DB.Exec(`INSERT INTO pages (id, markdown, html, is_burn, expires_at, password) VALUES (?, ?, ?, ?, ?, ?)`,
 		id, markdown, html, isBurn, nullExpires, nullPwd)
-		
+
 	return id, nullPwd.String, err
 }
 
@@ -105,7 +115,7 @@ func GetPage(id string) (*Page, error) {
 	var rawExpires sql.NullString
 	var rawPassword sql.NullString
 	var rawCreatedAt sql.NullString
-	
+
 	// 核武级数据抗性封装：利用原生 CAST(.. AS TEXT) 抵御一切因为 SQLite 无类型机制与 PureGo 驱动反序列化匹配失败引发的崩盘！
 	err := DB.QueryRow("SELECT id, markdown, html, is_burn, CAST(expires_at AS TEXT), password, CAST(created_at AS TEXT) FROM pages WHERE id = ?", id).
 		Scan(&p.ID, &p.Markdown, &p.HTML, &p.IsBurn, &rawExpires, &rawPassword, &rawCreatedAt)
@@ -115,11 +125,11 @@ func GetPage(id string) (*Page, error) {
 		}
 		return nil, err
 	}
-	
+
 	if rawPassword.Valid {
 		p.Password = rawPassword.String
 	}
-	
+
 	// 柔性转换提取出的纯字符串回真实过期刻度
 	if rawExpires.Valid && rawExpires.String != "" {
 		if t, err := time.Parse("2006-01-02 15:04:05", rawExpires.String[:19]); err == nil {
@@ -128,7 +138,7 @@ func GetPage(id string) (*Page, error) {
 			p.ExpiresAt = &t2
 		}
 	}
-	
+
 	// 回收创建时间的固定坐标系
 	if rawCreatedAt.Valid && rawCreatedAt.String != "" {
 		if t, err := time.Parse("2006-01-02 15:04:05", rawCreatedAt.String[:19]); err == nil {
@@ -141,13 +151,13 @@ func GetPage(id string) (*Page, error) {
 	} else {
 		p.CreatedAt = time.Now()
 	}
-	
+
 	// 核实动态到期的防守条件
 	if p.ExpiresAt != nil && time.Now().UTC().After(*p.ExpiresAt) {
 		DeletePage(id)
 		return nil, errors.New("拦截触发：您访问的正文已经正式被执行超期摧毁拦截被抹杀！")
 	}
-	
+
 	return &p, nil
 }
 

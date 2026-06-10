@@ -12,4 +12,5 @@ services:
       - ./data:/app/data
     environment:
       - PORT=18080
+      - DB_DRIVER=sqlite
       - DB_PATH=/app/data/app.db

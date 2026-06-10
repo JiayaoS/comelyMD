@@ -2,6 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "go",
   "env": {
+    "DB_DRIVER": "sqlite",
     "DB_PATH": "/tmp/comelymd/comelymd.db"
   }
 }
