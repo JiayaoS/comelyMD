@@ -295,7 +295,8 @@
       <div class="publish-console">
         <div class="options-panel">
           <label class="opt-item"><input type="checkbox" id="isBurn" name="is_burn" value="true"> 阅后即焚</label>
-          <label class="opt-item"><input type="checkbox" id="withPassword" name="with_password" value="true"> 密码保护</label>
+          <label class="opt-item" id="passwordOption"><input type="checkbox" id="withPassword" name="with_password" value="true"> 密码保护</label>
+          <input type="hidden" id="withPasswordHidden" name="with_password" value="true" disabled>
           <div class="opt-select" style="margin-left: auto;">
             <span style="color:var(--text-muted);">过期:</span>
             <select id="expireTime" name="expire_time">
@@ -464,9 +465,27 @@
     });
 
     // === 提交逻辑 ===
+    const burnToggle = document.getElementById('isBurn');
+    const passwordToggle = document.getElementById('withPassword');
+    const passwordHidden = document.getElementById('withPasswordHidden');
+    const passwordOption = document.getElementById('passwordOption');
     const form = document.getElementById('mdForm');
     const overlay = document.getElementById('resultOverlay');
     let generatedPwd = '';
+
+    function syncProtectionOptions() {
+      const isBurnEnabled = burnToggle.checked;
+      if (isBurnEnabled) {
+        passwordToggle.checked = true;
+      }
+      passwordToggle.disabled = isBurnEnabled;
+      passwordHidden.disabled = !isBurnEnabled;
+      passwordOption.style.opacity = isBurnEnabled ? '0.7' : '1';
+      passwordOption.title = isBurnEnabled ? '阅后即焚已启用，密码保护会自动开启。' : '';
+    }
+
+    burnToggle.addEventListener('change', syncProtectionOptions);
+    syncProtectionOptions();
     
     function closeResult() { overlay.classList.remove('show'); mdInput.focus(); }
 

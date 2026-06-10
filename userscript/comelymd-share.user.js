@@ -239,6 +239,14 @@
     );
     const cancelBtn = h('button', {className:'cmd-btn cmd-btn-cancel'}, '取消');
     const submitBtn = h('button', {className:'cmd-btn cmd-btn-primary'}, '分享');
+    const passwordHint = h('div', {style:{fontSize:'12px', color:'#8b8fa3', display:'none'}}, '阅后即焚启用时会自动开启密码保护。');
+
+    function syncProtectionOptions() {
+      const isBurnEnabled = burnCheck.checked;
+      if (isBurnEnabled) pwdCheck.checked = true;
+      pwdCheck.disabled = isBurnEnabled;
+      passwordHint.style.display = isBurnEnabled ? 'block' : 'none';
+    }
 
     const bodyDiv = h('div', {className:'cmd-panel-body'},
       h('div', {className:'cmd-field'}, h('label', {}, '服务器'), serverInput),
@@ -246,6 +254,7 @@
         h('label', {className:'cmd-opt'}, burnCheck, ' 阅后即焚'),
         h('label', {className:'cmd-opt'}, pwdCheck, ' 密码保护'),
       ),
+      passwordHint,
       h('div', {className:'cmd-select'},
         h('span', {style:{color:'#8b8fa3'}}, '过期:'),
         expireSelect
@@ -261,6 +270,8 @@
       )
     );
     document.body.appendChild(overlay);
+    syncProtectionOptions();
+    burnCheck.addEventListener('change', syncProtectionOptions);
 
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
     cancelBtn.addEventListener('click', () => overlay.remove());
