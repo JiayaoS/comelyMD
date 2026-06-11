@@ -260,7 +260,7 @@
 
     <!-- 左侧目录 -->
     <aside class="toc-container" id="toc-container" style="display: none;">
-      <div class="toc-title">ON THIS PAGE</div>
+      <div class="toc-title">本文目录</div>
       <ul class="toc-list" id="toc-list"></ul>
     </aside>
 
@@ -359,16 +359,16 @@
         
         const copyBtn = document.createElement('button');
         copyBtn.className = 'code-copy';
-        copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+        copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> 复制';
         copyBtn.title = '复制代码';
         
         copyBtn.addEventListener('click', async () => {
           try {
             await navigator.clipboard.writeText(code.innerText);
-            copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+            copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> 已复制';
             copyBtn.classList.add('copied');
             setTimeout(() => {
-              copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+              copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> 复制';
               copyBtn.classList.remove('copied');
             }, 2000);
           } catch (e) {
@@ -390,7 +390,7 @@
       document.querySelectorAll('.markdown-body pre > code.language-mermaid').forEach((block, i) => {
         const id = 'mermaid-' + i;
         const pre = block.parentElement;
-        // 把代码块的外链换成纯洁的 div 给 mermaid 渲染
+        // Replace the code block with a div for Mermaid rendering.
         const div = document.createElement('div');
         div.className = 'mermaid';
         div.id = id;
@@ -415,17 +415,17 @@
       }
     }
 
-    // === 美化引用标注 (Citation Refer) ===
+    // === Style citation links ===
     function enhanceCitations() {
       document.querySelectorAll('.markdown-body a').forEach(a => {
         let txt = a.textContent.trim();
         let isCitation = false;
 
-        // 规则1：天然属于纯数字系的标注（如 "1", "[1]", "【1】"）
+        // Numeric references such as "1", "[1]", or "【1】".
         if (/^\[\d+\]$/.test(txt) || /^【\d+】$/.test(txt) || /^\d+$/.test(txt)) {
           isCitation = true;
         }
-        // 规则2：像 "([Apple])" 或 "[AMD]" 这样，被括号作为句法特征紧紧包裹的短链接
+        // Short links wrapped by surrounding punctuation, such as "([Apple])".
         else if (txt.length < 20) {
           const prev = a.previousSibling;
           const next = a.nextSibling;

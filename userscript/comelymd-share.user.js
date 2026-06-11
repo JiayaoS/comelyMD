@@ -204,7 +204,7 @@
     line.setAttribute('x2', '12'); line.setAttribute('y2', '15');
     svg.append(path, polyline, line);
     
-    // 用户需求：添加 MD 角标以区分官方分享按钮，黑底白字高亮
+    // Add an MD badge so the ComelyMD action is distinct from native share buttons.
     const badge = document.createElement('span');
     badge.textContent = 'MD';
     Object.assign(badge.style, {
@@ -256,7 +256,7 @@
       ),
       passwordHint,
       h('div', {className:'cmd-select'},
-        h('span', {style:{color:'#8b8fa3'}}, '过期:'),
+        h('span', {style:{color:'#8b8fa3'}}, '过期时间：'),
         expireSelect
       ),
     );
@@ -330,7 +330,7 @@
     bodyDiv.appendChild(h('div', {className:'cmd-result'}, ...resultItems));
 
     footerDiv.textContent = '';
-    const copyBtn = h('button', {className:'cmd-btn cmd-btn-cancel'}, pwd ? '仅复制 (含密码)' : '仅复制');
+    const copyBtn = h('button', {className:'cmd-btn cmd-btn-cancel'}, pwd ? '复制链接和密码' : '复制链接');
     const viewBtn = h('button', {className:'cmd-btn cmd-btn-primary'}, '复制并查看');
     footerDiv.append(copyBtn, viewBtn);
 
@@ -457,7 +457,7 @@
     // kimi: { name: 'Kimi', match: () => location.hostname.includes('kimi.moonshot.cn'), ... },
   };
 
-  // ─── 核心注入逻辑 ───
+  // ─── Button injection ───
   function getActiveAdapter() {
     return Object.values(adapters).find(a => a.match());
   }
@@ -474,9 +474,9 @@
       const existingBtn = block.querySelector('.cmd-share-btn');
       if (existingBtn) {
         if (existingBtn.parentElement === targetActionBar) {
-          return; // 已经正确安放在当前时刻最新的有效底栏中
+          return; // Already attached to the current action bar.
         } else {
-          existingBtn.remove(); // 掉队在弃用隐藏的底栏里，销毁并准备重新注入
+          existingBtn.remove(); // Remove stale button before reinserting.
         }
       }
 
@@ -484,7 +484,7 @@
 
       const btn = createShareIcon();
       
-      // 用户需求：将 ChatGPT 的分享按钮排在最右下角
+      // Place the ChatGPT action at the far right of the action bar.
       if (adapter.name === 'ChatGPT') {
         targetActionBar.style.width = '100%';
         btn.style.marginLeft = 'auto';
@@ -493,7 +493,7 @@
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
-        // 传入 DOM 节点的克隆给 Turndown，避免 Trusted Types 限制
+        // Convert a cloned DOM node so host-page Trusted Types policies do not affect conversion.
         const contentNode = adapter.getContentHTML(block);
         const markdown = td.turndown(contentNode.cloneNode(true));
         showPanel(markdown);
@@ -516,12 +516,12 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // 增加一个定时轮询，作为单页面应用（SPA）长内容流加载的一个强力兜底。
-    // 因为历史重加载时，MutationObserver 可能在异步返回之前捕捉不到结构化改变。
+    // Periodically retry injection as a fallback for SPA content updates.
+    // MutationObserver can miss async content swaps during conversation history restores.
     setInterval(injectShareButtons, 2000);
   }
 
-  // 监听 SPA 的路由变化，辅助触发
+  // Watch SPA navigation and retry button injection after route changes.
   const _pushState = history.pushState;
   history.pushState = function() {
     _pushState.apply(history, arguments);

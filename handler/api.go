@@ -21,7 +21,7 @@ var tmpl *template.Template
 func SetTemplates(templateFS fs.FS) {
 	parsedTemplate, err := template.ParseFS(templateFS, "templates/*.html")
 	if err != nil {
-		log.Fatalf("绝命灾难：核心全局视觉底层在主源启动阶段严重垮塌失联，强制剥离关闭以防静默吞除输出！断点诱因: %v", err)
+		log.Fatalf("failed to parse templates: %v", err)
 	}
 	tmpl = parsedTemplate
 }
@@ -40,7 +40,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreatePageHandler(w http.ResponseWriter, r *http.Request) {
-	// CORS 支持：允许油猴脚本等跨域调用
+	// Allow cross-origin submissions from the browser userscript.
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -56,7 +56,7 @@ func CreatePageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	r.Body = http.MaxBytesReader(w, r.Body, 5<<20)
-	// 兼容 multipart/form-data 和 application/x-www-form-urlencoded
+	// Accept both multipart form posts and URL-encoded form posts.
 	contentType := r.Header.Get("Content-Type")
 	if strings.Contains(contentType, "multipart/form-data") {
 		if err := r.ParseMultipartForm(5 << 20); err != nil {
@@ -99,7 +99,7 @@ func CreatePageHandler(w http.ResponseWriter, r *http.Request) {
 
 	safeHTML, err := render.MarkdownToHTML([]byte(mdContent))
 	if err != nil {
-		http.Error(w, "Markdown 内部转译失败", http.StatusInternalServerError)
+		http.Error(w, "Markdown 渲染失败", http.StatusInternalServerError)
 		return
 	}
 
@@ -131,7 +131,7 @@ func CreatePageHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(responseCtx)
 }
 
-// 极简提取器：从游离的 Markdown 原始文档中动态榨取 Title 和 Excerpt
+// extractSEO derives a title and summary from the submitted Markdown.
 func extractSEO(markdown string) (title, excerpt string) {
 	lines := strings.Split(markdown, "\n")
 	for _, line := range lines {
@@ -148,7 +148,7 @@ func extractSEO(markdown string) (title, excerpt string) {
 	if title == "" {
 		title = "ComelyMD Snippet"
 	}
-	// 粗略清理占位标点
+	// Remove lightweight Markdown punctuation before using the text as a summary.
 	excerpt = strings.ReplaceAll(excerpt, "*", "")
 	excerpt = strings.ReplaceAll(excerpt, "_", "")
 	excerpt = strings.ReplaceAll(excerpt, "`", "")
@@ -157,7 +157,7 @@ func extractSEO(markdown string) (title, excerpt string) {
 		excerpt = string(runes[:85]) + "..."
 	}
 	if excerpt == "" {
-		excerpt = "极简、安全、美观的 Markdown 阅后即焚分享工具"
+		excerpt = "安全、简洁的 Markdown 分享工具"
 	}
 	return title, excerpt
 }
@@ -176,9 +176,9 @@ func ViewPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	pageData, err := storage.GetPage(id)
 	if err != nil {
-		log.Printf("[访问受阻或不存在] 请求提取核心数据库解析链接源 %s 失败告警: %v", id, err)
+		log.Printf("page lookup failed: id=%s err=%v", id, err)
 		if tmpl != nil {
-			tmpl.ExecuteTemplate(w, "page.html", map[string]interface{}{"HTML": template.HTML(fmt.Sprintf("<div style='text-align:center; padding-top: 5rem; color: #888; font-family: sans-serif;'><h1 style='font-size: 4rem; margin-bottom: 0.5rem;'>404</h1><p>内容不存在、已过期或属于阅后即焚。</p></div>"))})
+			tmpl.ExecuteTemplate(w, "page.html", map[string]interface{}{"HTML": template.HTML(fmt.Sprintf("<div style='text-align:center; padding-top: 5rem; color: #888; font-family: sans-serif;'><h1 style='font-size: 4rem; margin-bottom: 0.5rem;'>404</h1><p>内容不存在、已过期或已被销毁。</p></div>"))})
 		}
 		return
 	}
@@ -215,8 +215,8 @@ func ViewPageHandler(w http.ResponseWriter, r *http.Request) {
 			"Excerpt":   excerpt,
 		})
 		if errTmpl != nil {
-			log.Printf("[模板白屏拦截] 服务端装载渲染资源 %s 时崩溃: %v", id, errTmpl)
-			w.Write([]byte(fmt.Sprintf("\n<!-- 服务端页面层组装错误，引擎阻断输出: %v -->", errTmpl)))
+			log.Printf("failed to render page template: id=%s err=%v", id, errTmpl)
+			w.Write([]byte("\n<!-- page render error -->"))
 		}
 	} else {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

@@ -279,14 +279,14 @@
       <div class="editor-container">
         <!-- 左侧编辑 -->
         <div class="pane edit-pane active" id="pane-edit">
-          <div class="pane-header">Markdown Source</div>
+          <div class="pane-header">Markdown 源文</div>
           <textarea name="markdown" id="markdown" placeholder="在此粘贴或输入 Markdown 内容…" required></textarea>
         </div>
         <!-- 右侧预览 -->
         <div class="pane preview-pane" id="pane-preview">
-          <div class="pane-header">Live Preview</div>
+          <div class="pane-header">实时预览</div>
           <div class="preview-content markdown-body" id="preview-box">
-             <div style="color:var(--text-muted); opacity:0.5; text-align:center; margin-top:4rem;">预览区域...</div>
+             <div style="color:var(--text-muted); opacity:0.5; text-align:center; margin-top:4rem;">预览将在此显示</div>
           </div>
         </div>
       </div>
@@ -298,7 +298,7 @@
           <label class="opt-item" id="passwordOption"><input type="checkbox" id="withPassword" name="with_password" value="true"> 密码保护</label>
           <input type="hidden" id="withPasswordHidden" name="with_password" value="true" disabled>
           <div class="opt-select" style="margin-left: auto;">
-            <span style="color:var(--text-muted);">过期:</span>
+            <span style="color:var(--text-muted);">过期时间：</span>
             <select id="expireTime" name="expire_time">
               <option value="0" selected>永不</option>
               <option value="5m">5 分钟</option>
@@ -384,11 +384,11 @@
       renderTimeout = setTimeout(() => {
         let raw = mdInput.value;
         if (!raw.trim()) {
-           previewBox.innerHTML = '<div style="color:var(--text-muted); opacity:0.5; text-align:center; margin-top:4rem;">预览区域...</div>';
+           previewBox.innerHTML = '<div style="color:var(--text-muted); opacity:0.5; text-align:center; margin-top:4rem;">预览将在此显示</div>';
            return;
         }
 
-        // 1. 保护数学公式块，防止 '_' 及 '*' 被 marked.js 错误格式化
+        // Preserve math expressions so Markdown emphasis does not alter their syntax.
         const mathBlocks = [];
         raw = raw.replace(/\$\$([\s\S]+?)\$\$/g, (match) => {
           mathBlocks.push(match);
@@ -399,11 +399,11 @@
           return `COMELYMATHPREVIEW${mathBlocks.length - 1}ENDMATH`;
         });
 
-        // 2. 解析基本语法与代码清理沙盒
+        // Parse and sanitize the preview HTML.
         const dirtyHTML = marked.parse(raw);
         let cleanHTML = DOMPurify.sanitize(dirtyHTML);
 
-        // 3. 释放数学公式
+        // Restore math expressions before rendering.
         mathBlocks.forEach((block, i) => {
           const escaped = block.replace(/</g, '&lt;').replace(/>/g, '&gt;');
           cleanHTML = cleanHTML.replace(`COMELYMATHPREVIEW${i}ENDMATH`, escaped);
@@ -411,7 +411,7 @@
 
         previewBox.innerHTML = cleanHTML;
 
-        // 4. 重绘图形与公式
+        // Render formulas and diagrams.
         renderMathAndDiagrams();
       }, 350); // 350ms 防抖
     });
@@ -430,7 +430,7 @@
         mermaidNodes.push(div);
       });
       if (mermaidNodes.length > 0) {
-        try { mermaid.init(undefined, mermaidNodes); } catch (e) {} // 捕获打字未画好图一半的报错
+        try { mermaid.init(undefined, mermaidNodes); } catch (e) {} // Ignore incomplete diagrams while the user is typing.
       }
 
       // 捕获 公式
@@ -509,7 +509,7 @@
         const btnFull = document.getElementById('btnCopyFull');
         if (generatedPwd) {
           btnFull.style.display = '';
-          pwdArea.innerHTML = `<div class="pwd-bar" onclick="copyPwd()"><div><span style="opacity:0.8;">生成密码:</span> <code>${generatedPwd}</code></div><i class="fa-regular fa-copy"></i></div>`;
+          pwdArea.innerHTML = `<div class="pwd-bar" onclick="copyPwd()"><div><span style="opacity:0.8;">访问密码：</span> <code>${generatedPwd}</code></div><i class="fa-regular fa-copy"></i></div>`;
         } else { 
           btnFull.style.display = 'none'; pwdArea.innerHTML = ''; 
         }

@@ -95,26 +95,26 @@ func resolveDatabaseConfig(getenv func(string) string) (databaseConfig, error) {
 func main() {
 	staticFiles, err := fs.Sub(embeddedFiles, "static")
 	if err != nil {
-		log.Fatalf("无法装载内嵌静态资源: %v", err)
+		log.Fatalf("failed to load embedded static assets: %v", err)
 	}
 	handler.SetTemplates(embeddedFiles)
 	handler.SetStatic(staticFiles)
 
 	databaseConfig, err := resolveDatabaseConfig(os.Getenv)
 	if err != nil {
-		log.Fatalf("数据库配置无效: %v", err)
+		log.Fatalf("invalid database configuration: %v", err)
 	}
 
 	if databaseConfig.localPath != "" {
 		if dbDir := filepath.Dir(databaseConfig.localPath); dbDir != "." {
 			if err := os.MkdirAll(dbDir, 0o700); err != nil {
-				log.Fatalf("无法预先建设持久化所需数据源数据安全保存文件夹: %v", err)
+				log.Fatalf("failed to create database directory: %v", err)
 			}
 		}
 	}
 
 	storage.InitDB(databaseConfig.driver, databaseConfig.dataSourceName)
-	log.Printf("成功接入数据库进行基础载入，驱动=%s，相关目标定位：%s", databaseConfig.driver, databaseConfig.logTarget)
+	log.Printf("database initialized: driver=%s target=%s", databaseConfig.driver, databaseConfig.logTarget)
 
 	port := os.Getenv("PORT")
 	if port == "" {

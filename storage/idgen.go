@@ -8,7 +8,7 @@ import (
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const pwdCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-// GenerateID 依据指定长度返回高安级别的随机 Base62 字符组合。
+// GenerateID returns a cryptographically random Base62 string with the requested length.
 func GenerateID(length int) (string, error) {
 	b := make([]byte, length)
 	charLen := big.NewInt(int64(len(charset)))
@@ -22,7 +22,7 @@ func GenerateID(length int) (string, error) {
 	return string(b), nil
 }
 
-// GeneratePassword 生成用于阅读加密的高阶四字独立随机提取门禁暗语
+// GeneratePassword returns a cryptographically random password with the requested length.
 func GeneratePassword(length int) (string, error) {
 	b := make([]byte, length)
 	charLen := big.NewInt(int64(len(pwdCharset)))
